@@ -31,6 +31,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.BlockStateMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -832,6 +833,20 @@ public class BlockBreakListener implements Listener {
                     e.setCancelled(true);
                     drops = breakInRadius(b, radius, p, axePredicates);
                 }
+            }
+        }
+
+        // Ancient axe without radius - remove water/lava in 3x3 with 3s cooldown
+        if (itemID.contains("ancienttaxe") && !container.has(keyRadius, PersistentDataType.DOUBLE)) {
+            if (!p.hasMetadata("ancienttaxe_lava_cooldown")) {
+                for (Block block : getBlocksInRadius(b, 1)) {
+                    Material type = block.getType();
+                    if ((type == Material.WATER || type == Material.LAVA) && isInClaimOrWilderness(p, block.getLocation())) {
+                        block.setType(Material.AIR);
+                    }
+                }
+                p.setMetadata("ancienttaxe_lava_cooldown", new FixedMetadataValue(getPlugin(), true));
+                Bukkit.getScheduler().runTaskLater(getPlugin(), () -> p.removeMetadata("ancienttaxe_lava_cooldown", getPlugin()), 60L);
             }
         }
 
