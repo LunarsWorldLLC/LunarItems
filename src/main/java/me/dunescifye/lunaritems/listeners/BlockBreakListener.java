@@ -185,26 +185,27 @@ public class BlockBreakListener implements Listener {
             }
         }
 
-        for (ItemStack item : p.getInventory().getContents()) {
-            if (item == null || !item.hasItemMeta()) continue;
-            ItemMeta meta = item.getItemMeta();
-            PersistentDataContainer pdc = meta.getPersistentDataContainer();
-            String itemID = pdc.get(keyEIID, PersistentDataType.STRING);
-            if (itemID != null && itemID.contains("creakingscribe")) {
-                Double blocksBroken = pdc.get(keyBlocks_Broken, PersistentDataType.DOUBLE);
-                if (blocksBroken == null) continue;
-                pdc.set(keyBlocks_Broken, PersistentDataType.DOUBLE, (blocksBroken + 1));
-                meta.lore(updateLore(item, "心" + blocksBroken.intValue(), "心" + (blocksBroken.intValue() + 1)));
-                item.setItemMeta(meta);
-            }
-        }
-
         ItemStack item = p.getInventory().getItemInMainHand();
         if (!item.hasItemMeta()) return;
         ItemMeta meta = item.getItemMeta();
         PersistentDataContainer container = meta.getPersistentDataContainer();
         String itemID = container.get(LunarItems.keyEIID, PersistentDataType.STRING);
         if (itemID == null) return;
+
+        // Moved AFTER early exit - only runs when player is using a LunarItems tool
+        for (ItemStack invItem : p.getInventory().getContents()) {
+            if (invItem == null || !invItem.hasItemMeta()) continue;
+            ItemMeta invMeta = invItem.getItemMeta();
+            PersistentDataContainer pdc = invMeta.getPersistentDataContainer();
+            String invItemID = pdc.get(keyEIID, PersistentDataType.STRING);
+            if (invItemID != null && invItemID.equals("creakingscribe")) {
+                Double blocksBroken = pdc.get(keyBlocks_Broken, PersistentDataType.DOUBLE);
+                if (blocksBroken == null) continue;
+                pdc.set(keyBlocks_Broken, PersistentDataType.DOUBLE, (blocksBroken + 1));
+                invMeta.lore(updateLore(invItem, "心" + blocksBroken.intValue(), "心" + (blocksBroken.intValue() + 1)));
+                invItem.setItemMeta(invMeta);
+            }
+        }
 
         World world = b.getWorld();
         Location loc = b.getLocation();
