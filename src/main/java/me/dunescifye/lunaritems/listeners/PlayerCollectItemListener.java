@@ -24,48 +24,61 @@ public class PlayerCollectItemListener implements Listener {
   @EventHandler
   public void onPlayerCollectItem(EntityPickupItemEvent e) {
     if (!(e.getEntity() instanceof Player p)) return;
+
     PlayerInventory inv = p.getInventory();
-    for (ItemStack invItem : inv.getContents()) {
-      if (invItem != null && invItem.hasItemMeta()) {
-        ItemMeta meta = invItem.getItemMeta();
-        PersistentDataContainer pdc = meta.getPersistentDataContainer();
-        String itemID = pdc.get(LunarItems.keyEIID, PersistentDataType.STRING);
-        if (itemID == null || !itemID.contains("sunblackhole")) continue;
 
-        String mat = pdc.get(keyVoidMaterial, PersistentDataType.STRING);
-        String mat2 = pdc.get(keyVoidMaterial2, PersistentDataType.STRING);
-        String mat3 = pdc.get(keyVoidMaterial3, PersistentDataType.STRING);
+    Item pickupItem = e.getItem();
+    ItemStack pickupStack = pickupItem.getItemStack();
+    Material pickupMat = pickupStack.getType();
 
-        Item item = e.getItem();
-        Material itemMat = item.getItemStack().getType();
+    for (int i = 0; i < 9; i++) { // why we iterate through whole inv?
+      ItemStack invItem = inv.getItem(i);
 
-        if ((mat != null && itemMat.equals(Material.getMaterial(mat))) || (mat2 != null && itemMat.equals(Material.getMaterial(mat2))) || (mat3 != null && itemMat.equals(Material.getMaterial(mat3)))) {
-          e.setCancelled(true);
-          e.getItem().remove();
-        }
+      if (invItem == null || invItem.isEmpty()) continue;
+
+      ItemMeta meta = invItem.getItemMeta();
+      if (meta == null) continue; // actually im not yet sure whether this produces same output as hasItemMeta
+
+      PersistentDataContainer pdc = meta.getPersistentDataContainer();
+      String itemID = pdc.get(LunarItems.keyEIID, PersistentDataType.STRING);
+      if (itemID == null || !itemID.contains("sunblackhole")) continue;
+
+      String mat = pdc.get(keyVoidMaterial, PersistentDataType.STRING);
+      String mat2 = pdc.get(keyVoidMaterial2, PersistentDataType.STRING);
+      String mat3 = pdc.get(keyVoidMaterial3, PersistentDataType.STRING);
+
+      if (matches(mat, pickupMat) || matches(mat2, pickupMat) || matches(mat3, pickupMat)) {
+        e.setCancelled(true);
+        pickupItem.remove();
       }
+
     }
 
+    // TODO: maybe moving the result check before the item meta data is better to avoid doing meta data copying too often
     ItemStack offhand = inv.getItemInOffHand();
+    if (offhand.isEmpty()) return;
+
     ItemMeta meta = offhand.getItemMeta();
     if (meta == null) return;
+
     PersistentDataContainer pdc = meta.getPersistentDataContainer();
     String itemID = pdc.get(LunarItems.keyEIID, PersistentDataType.STRING);
-    if (itemID == null) return;
-    if (itemID.contains("autumnsmoker")) {
-      ItemStack item = e.getItem().getItemStack();
-      if (Utils.rawOres.containsKey(item.getType())) {
-        inv.addItem(item.withType(Utils.rawOres.get(item.getType())));
-        e.setCancelled(true);
-        e.getItem().remove();
-        Utils.runConsoleCommands("ei console-modification modification variable " + p.getName() + " 40 cookedfood " + item.getAmount());
-      } else if (Utils.smeltedFoods.containsKey(item.getType())) {
-        inv.addItem(item.withType(Utils.smeltedFoods.get(item.getType())));
-        e.setCancelled(true);
-        e.getItem().remove();
-        Utils.runConsoleCommands("ei console-modification modification variable " + p.getName() + " 40 cookedfood " + item.getAmount());
-      }
-    }
+    if (itemID == null || !itemID.contains("autumnsmoker"))  return;
+
+    Material result = Utils.rawOres.get(pickupMat); // no need for containsKey check since this will return null if not in map
+    if (result == null) result = Utils.smeltedFoods.get(pickupMat); // falls back if its not in map
+    if (result == null) return; // if both not in map then we dont continue
+
+    inv.addItem(new ItemStack(result, pickupStack.getAmount()));
+    e.setCancelled(true);
+    pickupItem.remove();
+
+    Utils.runConsoleCommands("ei console-modification modification variable " + p.getName() + " 40 cookedfood " + pickupStack.getAmount());
   }
 
+  private boolean matches(String materialName, Material pickupMat) {
+    if (materialName == null) return false;
+    Material mat = Material.matchMaterial(materialName);
+    return mat == pickupMat;
+  }
 }
