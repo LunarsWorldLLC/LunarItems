@@ -1,5 +1,6 @@
 package me.dunescifye.lunaritems.listeners;
 
+import io.papermc.paper.persistence.PersistentDataContainerView;
 import me.dunescifye.lunaritems.LunarItems;
 import me.dunescifye.lunaritems.utils.Utils;
 import org.bukkit.Material;
@@ -11,8 +12,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 public class PlayerCollectItemListener implements Listener {
@@ -34,12 +33,9 @@ public class PlayerCollectItemListener implements Listener {
     for (int i = 0; i < 9; i++) { // why we iterate through whole inv?
       ItemStack invItem = inv.getItem(i);
 
-      if (invItem == null || invItem.isEmpty()) continue;
+      if (invItem == null || invItem.isEmpty() || !invItem.hasItemMeta()) continue;
 
-      ItemMeta meta = invItem.getItemMeta();
-      if (meta == null) continue; // actually im not yet sure whether this produces same output as hasItemMeta
-
-      PersistentDataContainer pdc = meta.getPersistentDataContainer();
+      PersistentDataContainerView pdc = invItem.getPersistentDataContainer();
       String itemID = pdc.get(LunarItems.keyEIID, PersistentDataType.STRING);
       if (itemID == null || !itemID.contains("sunblackhole")) continue;
 
@@ -54,14 +50,10 @@ public class PlayerCollectItemListener implements Listener {
 
     }
 
-    // TODO: maybe moving the result check before the item meta data is better to avoid doing meta data copying too often
     ItemStack offhand = inv.getItemInOffHand();
-    if (offhand.isEmpty()) return;
+    if (offhand.isEmpty() || !offhand.hasItemMeta()) return;
 
-    ItemMeta meta = offhand.getItemMeta();
-    if (meta == null) return;
-
-    PersistentDataContainer pdc = meta.getPersistentDataContainer();
+    PersistentDataContainerView pdc = offhand.getPersistentDataContainer();
     String itemID = pdc.get(LunarItems.keyEIID, PersistentDataType.STRING);
     if (itemID == null || !itemID.contains("autumnsmoker"))  return;
 
