@@ -9,6 +9,7 @@ import me.dunescifye.lunaritems.files.BlocksConfig;
 import me.dunescifye.lunaritems.gui.ColorGUI;
 import me.dunescifye.lunaritems.utils.BlockUtils;
 import me.dunescifye.lunaritems.utils.CooldownManager;
+import me.dunescifye.lunaritems.utils.FUtils;
 import me.dunescifye.lunaritems.utils.Utils;
 import org.bukkit.*;
 import org.bukkit.block.Biome;
@@ -18,7 +19,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -142,9 +142,7 @@ public class PlayerInteractListener implements Listener {
                 }
             }
             else if (itemID.contains("amberlightbuilderschisel") && b != null) {
-                BlockBreakEvent event = new BlockBreakEvent(b, p);
-                Bukkit.getPluginManager().callEvent(event);
-                if (event.isCancelled()) return;
+                if (!FUtils.isInClaimOrWilderness(p, b.getLocation())) return;
                 int radius = (int) (double) container.getOrDefault(LunarItems.keyRadius,  PersistentDataType.DOUBLE,
                   0.0);
                 for (Block block : Utils.getBlocksInRadius(b, radius)) {
