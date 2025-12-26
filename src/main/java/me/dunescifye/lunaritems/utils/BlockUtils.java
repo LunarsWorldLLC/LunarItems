@@ -252,13 +252,24 @@ public class BlockUtils {
 
     public static void breakInVein(Block center, Collection<ItemStack> drops, Material material, Player p) {
         ItemStack item = p.getInventory().getItemInMainHand();
-        for (Block b : getBlocksInRadius(center, 1)) {
-            if (b.getType().equals(material)) {
-                // Testing claim
-                if (isInClaimOrWilderness(p, b.getLocation())) {
+        Set<Block> visited = new HashSet<>();
+        Deque<Block> toProcess = new ArrayDeque<>();
+
+        // Start from center, but don't process center itself (matches original behavior)
+        toProcess.add(center);
+        visited.add(center);
+
+        while (!toProcess.isEmpty()) {
+            Block current = toProcess.poll();
+
+            for (Block b : getBlocksInRadius(current, 1)) {
+                if (visited.contains(b)) continue;
+                visited.add(b);
+
+                if (b.getType().equals(material) && isInClaimOrWilderness(p, b.getLocation())) {
                     drops.addAll(b.getDrops(item));
                     b.setType(Material.AIR);
-                    breakInVein(b, drops, material, p);
+                    toProcess.add(b);
                 }
             }
         }
